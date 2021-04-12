@@ -1,4 +1,12 @@
-This README is just a fast *quick start* document. You can find more detailed documentation at [redis.io](https://redis.io).
+> This README is just a fast *quick start* document. You can find more detailed documentation at [redis.io](https://redis.io).
+
+Redis-6.2 with comments
+--------------
+
+This is my redis repo while learning redis where I would write some comments for better understanding.
+
+Comments would be written in Chinese for a quick and distinguished overview.
+
 
 What is Redis?
 --------------

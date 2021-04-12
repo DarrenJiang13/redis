@@ -66,6 +66,7 @@ int setTypeAdd(robj *subject, sds value) {
             if (success) {
                 /* Convert to regular set when the intset contains
                  * too many entries. */
+                /* 判断intset数组长度是否过长，过长则转换成ht*/
                 if (intsetLen(subject->ptr) > server.set_max_intset_entries)
                     setTypeConvert(subject,OBJ_ENCODING_HT);
                 return 1;

@@ -104,8 +104,8 @@ intset *intsetNew(void) {
 
 /* Resize the intset */
 static intset *intsetResize(intset *is, uint32_t len) {
-    uint32_t size = len*intrev32ifbe(is->encoding);
-    is = zrealloc(is,sizeof(intset)+size);
+    uint32_t size = len*intrev32ifbe(is->encoding); //根据新的编码大小乘以长度计算占用空间
+    is = zrealloc(is,sizeof(intset)+size); //realloc内存。因为新的size比原来大，所以不用担心数据丢失
     return is;
 }
 
@@ -159,7 +159,7 @@ static intset *intsetUpgradeAndAdd(intset *is, int64_t value) {
     uint8_t curenc = intrev32ifbe(is->encoding);
     uint8_t newenc = _intsetValueEncoding(value);
     int length = intrev32ifbe(is->length);
-    int prepend = value < 0 ? 1 : 0;
+    int prepend = value < 0 ? 1 : 0; /* 如果是负数，插入到第一个，如果是正数，插入到最后一个 */
 
     /* First set new encoding and resize */
     is->encoding = intrev32ifbe(newenc);
@@ -169,7 +169,7 @@ static intset *intsetUpgradeAndAdd(intset *is, int64_t value) {
      * Note that the "prepend" variable is used to make sure we have an empty
      * space at either the beginning or the end of the intset. */
     while(length--)
-        _intsetSet(is,length+prepend,_intsetGetEncoded(is,length,curenc));
+        _intsetSet(is,length+prepend,_intsetGetEncoded(is,length,curenc));/* 把所有元素平移到新的位置上 */
 
     /* Set the value at the beginning or the end. */
     if (prepend)
@@ -210,14 +210,14 @@ intset *intsetAdd(intset *is, int64_t value, uint8_t *success) {
     /* Upgrade encoding if necessary. If we need to upgrade, we know that
      * this value should be either appended (if > 0) or prepended (if < 0),
      * because it lies outside the range of existing values. */
-    if (valenc > intrev32ifbe(is->encoding)) {
+    if (valenc > intrev32ifbe(is->encoding)) {/* 如果新的编码方式大于原有的编码方式 */
         /* This always succeeds, so we don't need to curry *success. */
         return intsetUpgradeAndAdd(is,value);
     } else {
         /* Abort if the value is already present in the set.
          * This call will populate "pos" with the right position to insert
          * the value when it cannot be found. */
-        if (intsetSearch(is,value,&pos)) {
+        if (intsetSearch(is,value,&pos)) {/* 待插入元素是否已经存在 */
             if (success) *success = 0;
             return is;
         }
