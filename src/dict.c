@@ -1011,6 +1011,23 @@ static unsigned long _dictNextPower(unsigned long size)
     unsigned long i = DICT_HT_INITIAL_SIZE;
 
     if (size >= LONG_MAX) return LONG_MAX + 1LU;
+    // 事实上这个函数作用在于返回一个大于size的最小的2的次幂数
+    // 可以考虑参考 java 的hashmap的源码
+    //unsigned long _NextPower(unsigned long size){
+    //   unsigned long i = DICT_HT_INITIAL_SIZE;
+    //   if (size >= LONG_MAX) return LONG_MAX + 1LU;
+    //
+    //   int n = size; // 当碰到 2^n的时候，如果这里用size，返回2^(n+1),如果这里用size-1，返回2^(n)
+    //   n |= n >> 1; // 最高位以及最高位低一位变成1
+    //   n |= n >> 2; // 最高两位及低两位变成1
+    //   n |= n >> 4; // 最高四位及低四位变成1
+    //   n |= n >> 8; // 最高八位及低八位变成1
+    //   n |= n >> 16;// 最高十六位及低十六位变成1，
+    //   n |= n >> 32;// 最高三十二位及低三十二位变成1，unsigned long在64位系统中总共64位，enough
+    //   n = n + 1; // +1 得到对应的数
+    //
+    //   return (n > LONG_MAX)?(LONG_MAX>>1-1):n; //返回一个理论上LONG_MAX以下最大的2的次幂值。最好是设置一个MAXIMUN_COMPACITY
+    //  }
     while(1) {
         if (i >= size)
             return i;
