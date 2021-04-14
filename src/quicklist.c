@@ -264,6 +264,16 @@ size_t quicklistGetLzf(const quicklistNode *node, void **data) {
  * The only way to guarantee interior nodes get compressed is to iterate
  * to our "interior" compress depth then compress the next node we find.
  * If compress depth is larger than the entire list, we return immediately. */
+//
+// quicklist在结构体中通过compress这个参数设置了可压缩区和不可压缩区
+// 下面三个范围中，只有中间的区间的节点是需要被压缩的。
+//
+// [0,1,...compress-1] [compress,...,n-compress] [n-compress+1,n]
+// ---- 不可压缩区 ----｜-------- 可压缩区 --------｜--- 不可压缩区 ---｜
+//
+// 由上可见当quicklist的长度小于2*compress时，通常不对其进行压缩。
+// 在插入或者删除一个node的时候，会调用quicklistCompress函数对quicklist进行一个验证来确保各自节点符合区域内的压缩属性
+// 插入/删除一个node时，根据插入的node在可压缩区还是不可压缩区进行分类处理
 REDIS_STATIC void __quicklistCompress(const quicklist *quicklist,
                                       quicklistNode *node) {
     /* If length is less than our compress depth (from both sides),
@@ -309,11 +319,8 @@ REDIS_STATIC void __quicklistCompress(const quicklist *quicklist,
     int depth = 0;
     int in_depth = 0;
 
-    //先保证两端的node都是decompressed的
-    //有时候在删除了一个节点之后，可能导致压缩节点出现在了两端不压缩的区域范围内
-    //因此需要先对两端规定的compress个节点进行解压确认。
-    // 下面三个范围中，只有中间的区间的节点是需要被压缩的。
-    // [0,1,...compress-1] [compress,...,n-compress] [n-compress+1,n]
+    // 删除了一个节点之后，压缩了的node挤到了不可压缩的区域
+    // 因此需要先对两端规定的compress个节点进行解压确认。
     while (depth++ < quicklist->compress) {
         quicklistDecompressNode(forward);
         quicklistDecompressNode(reverse);
@@ -328,10 +335,15 @@ REDIS_STATIC void __quicklistCompress(const quicklist *quicklist,
         forward = forward->next;
         reverse = reverse->prev;
     }
-    //如果节点在需要压缩的范围 [compress,...,n-compress] 内，压缩该节点
+
+    //通常压缩节点发生在插入一个新的节点的时候。这时候有两种情况：
+    //  - 插入的节点在可压缩区[compress,...,n-compress]：直接对该节点进行压缩即可
+    //  - 插入的节点在不可压缩区：这个时候原来处在不可压缩区的一个节点可能被顶到了可压缩区的第一个或者最后一个，
+    //                        因此通过forward和reverse来确定位置，对其进行压缩。
+    //插入的节点在可压缩区
     if (!in_depth)
         quicklistCompressNode(node);
-    //如果quicklist总长大于4，压缩节点（总长小于4压缩节点收益不高）。
+    //如果quicklist总长大于4，插入的节点把一个未压缩的节点顶到了压缩区。
     if (depth > 2) {
         /* At this point, forward and reverse are one node beyond depth */
         quicklistCompressNode(forward);
