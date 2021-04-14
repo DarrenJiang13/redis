@@ -308,10 +308,17 @@ REDIS_STATIC void __quicklistCompress(const quicklist *quicklist,
     quicklistNode *reverse = quicklist->tail;
     int depth = 0;
     int in_depth = 0;
-    while (depth++ < quicklist->compress) {//先保证两端的node都是
+
+    //先保证两端的node都是decompressed的
+    //有时候在删除了一个节点之后，可能导致压缩节点出现在了两端不压缩的区域范围内
+    //因此需要先对两端规定的compress个节点进行解压确认。
+    // 下面三个范围中，只有中间的区间的节点是需要被压缩的。
+    // [0,1,...compress-1] [compress,...,n-compress] [n-compress+1,n]
+    while (depth++ < quicklist->compress) {
         quicklistDecompressNode(forward);
         quicklistDecompressNode(reverse);
 
+        //如果node在两端需要保证不压缩的范围之内，把in_depth置为1
         if (forward == node || reverse == node)
             in_depth = 1;
 
@@ -321,10 +328,10 @@ REDIS_STATIC void __quicklistCompress(const quicklist *quicklist,
         forward = forward->next;
         reverse = reverse->prev;
     }
-
+    //如果节点在需要压缩的范围 [compress,...,n-compress] 内，压缩该节点
     if (!in_depth)
         quicklistCompressNode(node);
-
+    //如果quicklist总长大于4，压缩节点（总长小于4压缩节点收益不高）。
     if (depth > 2) {
         /* At this point, forward and reverse are one node beyond depth */
         quicklistCompressNode(forward);
