@@ -46,11 +46,11 @@
 typedef struct quicklistNode {
     struct quicklistNode *prev;
     struct quicklistNode *next;
-    unsigned char *zl;
-    unsigned int sz;             /* ziplist size in bytes */
-    unsigned int count : 16;     /* count of items in ziplist */
-    unsigned int encoding : 2;   /* RAW==1 or LZF==2 */
-    unsigned int container : 2;  /* NONE==1 or ZIPLIST==2 */
+    unsigned char *zl;           //指向list值类型，可能是ziplist也可能是lzf压缩之后的
+    unsigned int sz;             /* ziplist size in bytes *///zl指向的ziplist的长度，不代表zl压缩后的字符串长度
+    unsigned int count : 16;     /* count of items in ziplist *///ziplist的entry个数
+    unsigned int encoding : 2;   /* RAW==1 or LZF==2 *///编码方式（也可以理解为压缩方式，未来可能有其他的压缩方式）
+    unsigned int container : 2;  /* NONE==1 or ZIPLIST==2 *///zl指向的容器类型（数据类型，未来可能有其他的数据类型）
     unsigned int recompress : 1; /* was this node previous compressed? */
     unsigned int attempted_compress : 1; /* node can't compress; too small */
     unsigned int extra : 10; /* more bits to steal for future usage */
@@ -105,12 +105,12 @@ typedef struct quicklistBookmark {
 typedef struct quicklist {
     quicklistNode *head;
     quicklistNode *tail;
-    unsigned long count;        /* total count of all entries in all ziplists */
-    unsigned long len;          /* number of quicklistNodes */
-    int fill : QL_FILL_BITS;              /* fill factor for individual nodes */
-    unsigned int compress : QL_COMP_BITS; /* depth of end nodes not to compress;0=off */
-    unsigned int bookmark_count: QL_BM_BITS;
-    quicklistBookmark bookmarks[];
+    unsigned long count;        /* total count of all entries in all ziplists *///ziplist中所有entry的数目和
+    unsigned long len;          /* number of quicklistNodes *///quicklistNode的数目
+    int fill : QL_FILL_BITS;              /* fill factor for individual nodes *///每个ziplist最多含有的数据项数or最大占字节数
+    unsigned int compress : QL_COMP_BITS; /* depth of end nodes not to compress;0=off *///考虑到经常访问的是两端的数据，因此compress代表两端各有compress个节点不压缩
+    unsigned int bookmark_count: QL_BM_BITS;//书签个数
+    quicklistBookmark bookmarks[];//书签成员
 } quicklist;
 
 typedef struct quicklistIter {
@@ -121,6 +121,7 @@ typedef struct quicklistIter {
     int direction;
 } quicklistIter;
 
+// 表示存在指定quicklist中的指定node里指定zi里面的某个特定entry
 typedef struct quicklistEntry {
     const quicklist *quicklist;
     quicklistNode *node;

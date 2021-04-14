@@ -1062,7 +1062,7 @@ static long _dictKeyIndex(dict *d, const void *key, uint64_t hash, dictEntry **e
             }
             he = he->next;
         }
-        if (!dictIsRehashing(d)) break;
+        if (!dictIsRehashing(d)) break; //如果在rehash，总是返回新的hashtable的idx
     }
     return idx;
 }

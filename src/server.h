@@ -1007,8 +1007,8 @@ typedef struct zskiplist {
 } zskiplist;
 
 typedef struct zset {
-    dict *dict;
-    zskiplist *zsl;
+    dict *dict; // dict为了从element找score
+    zskiplist *zsl; // zsl为了从score找element（有序集合）
 } zset;
 
 typedef struct clientBufferLimitsConfig {

@@ -308,7 +308,7 @@ REDIS_STATIC void __quicklistCompress(const quicklist *quicklist,
     quicklistNode *reverse = quicklist->tail;
     int depth = 0;
     int in_depth = 0;
-    while (depth++ < quicklist->compress) {
+    while (depth++ < quicklist->compress) {//先保证两端的node都是
         quicklistDecompressNode(forward);
         quicklistDecompressNode(reverse);
 
