@@ -317,19 +317,25 @@ void *rdbLoadIntegerObject(rio *rdb, int enctype, int flags, size_t *lenptr) {
  * range of values that can fit in an 8, 16 or 32 bit signed value can be
  * encoded as integers to save space */
 int rdbTryIntegerEncoding(char *s, size_t len, unsigned char *enc) {
+//    long long value;
+//    char *endptr, buf[32];
+//
+//    /* Check if it's possible to encode this value as a number */
+//    value = strtoll(s, &endptr, 10);
+//    if (endptr[0] != '\0') return 0;
+//    ll2string(buf,32,value);
+//
+//    /* If the number converted back into a string is not identical
+//     * then it's not possible to encode the string as integer */
+//    if (strlen(buf) != len || memcmp(buf,s,len)) return 0;
+//
+//    return rdbEncodeInteger(value,enc);
     long long value;
-    char *endptr, buf[32];
-
-    /* Check if it's possible to encode this value as a number */
-    value = strtoll(s, &endptr, 10);
-    if (endptr[0] != '\0') return 0;
-    ll2string(buf,32,value);
-
-    /* If the number converted back into a string is not identical
-     * then it's not possible to encode the string as integer */
-    if (strlen(buf) != len || memcmp(buf,s,len)) return 0;
-
-    return rdbEncodeInteger(value,enc);
+    if(string2ll(s, len, &value)){
+        return rdbEncodeInteger(value,enc);
+    }else{
+        return 0;
+    }
 }
 
 ssize_t rdbSaveLzfBlob(rio *rdb, void *data, size_t compress_len,
@@ -1385,7 +1391,7 @@ int rdbSave(char *filename, rdbSaveInfo *rsi) {
     if (fsync(fileno(fp))) goto werr;
     if (fclose(fp)) { fp = NULL; goto werr; }
     fp = NULL;
-    
+
     /* Use RENAME to make sure the DB file is changed atomically only
      * if the generate DB file is ok. */
     if (rename(tmpfile,filename) == -1) {
@@ -1814,7 +1820,8 @@ robj *rdbLoadObject(int rdbtype, rio *rdb, sds key) {
             }
             quicklistAppendZiplist(o->ptr, zl);
         }
-    } else if (rdbtype == RDB_TYPE_HASH_ZIPMAP  ||
+    }
+    else if (rdbtype == RDB_TYPE_HASH_ZIPMAP  ||
                rdbtype == RDB_TYPE_LIST_ZIPLIST ||
                rdbtype == RDB_TYPE_SET_INTSET   ||
                rdbtype == RDB_TYPE_ZSET_ZIPLIST ||
