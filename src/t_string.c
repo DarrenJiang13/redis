@@ -37,9 +37,13 @@ int getGenericCommand(client *c);
  * String Commands
  *----------------------------------------------------------------------------*/
 
-static int checkStringLength(client *c, long long size) {
-    if (!(c->flags & CLIENT_MASTER) && size > server.proto_max_bulk_len) {
-        addReplyError(c,"string exceeds maximum allowed size (proto-max-bulk-len)");
+int checkStringLength(client *c, long long size, const char* err) {
+    if (!(c->flags & CLIENT_MASTER) && (size < 0 || size > server.proto_max_bulk_len)) {
+        if (err) {
+            addReplyError(c, err);
+        } else {
+            addReplyError(c, "string exceeds maximum allowed size (proto-max-bulk-len)");
+        }
         return C_ERR;
     }
     return C_OK;
@@ -448,7 +452,7 @@ void setrangeCommand(client *c) {
         }
 
         /* Return when the resulting string exceeds allowed size */
-        if (checkStringLength(c,offset+sdslen(value)) != C_OK)
+        if (checkStringLength(c,offset+sdslen(value),NULL) != C_OK)
             return;
 
         o = createObject(OBJ_STRING,sdsnewlen(NULL, offset+sdslen(value)));
@@ -468,7 +472,7 @@ void setrangeCommand(client *c) {
         }
 
         /* Return when the resulting string exceeds allowed size */
-        if (checkStringLength(c,offset+sdslen(value)) != C_OK)
+        if (checkStringLength(c,offset+sdslen(value),NULL) != C_OK)
             return;
 
         /* Create a copy when the object is shared or encoded. */
@@ -692,7 +696,7 @@ void appendCommand(client *c) {
         /* "append" is an argument, so always an sds */
         append = c->argv[2];
         totlen = stringObjectLen(o)+sdslen(append->ptr);
-        if (checkStringLength(c,totlen) != C_OK)
+        if (checkStringLength(c,totlen,NULL) != C_OK)
             return;
 
         /* Append the value */

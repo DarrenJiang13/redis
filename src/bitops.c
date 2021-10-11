@@ -429,14 +429,13 @@ int getBitOffsetFromArgument(client *c, robj *o, uint64_t *offset, int hash, int
     if (usehash) loffset *= bits;
 
     /* Limit offset to server.proto_max_bulk_len (512MB in bytes by default) */
-    if ((loffset < 0) || (loffset >> 3) >= server.proto_max_bulk_len)
-    {
-        addReplyError(c,err);
+    if (checkStringLength(c, loffset >> 3, err) == C_OK) {
+        *offset = loffset;
+        return C_OK;
+    } else {
         return C_ERR;
     }
 
-    *offset = loffset;
-    return C_OK;
 }
 
 /* This helper function for BITFIELD parses a bitfield type in the form

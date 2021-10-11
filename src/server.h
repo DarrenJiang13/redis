@@ -2483,6 +2483,9 @@ unsigned long setTypeSize(const robj *subject);
 void setTypeConvert(robj *subject, int enc);
 robj *setTypeDup(robj *o);
 
+/* String data type */
+int checkStringLength(client *c, long long size, const char* err);
+
 /* Hash data type */
 #define HASH_SET_TAKE_FIELD (1<<0)
 #define HASH_SET_TAKE_VALUE (1<<1)
