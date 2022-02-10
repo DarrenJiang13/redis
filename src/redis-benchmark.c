@@ -1911,11 +1911,11 @@ int main(int argc, char **argv) {
             free(cmd);
         }
 
-        if (test_is_selected("lpush")) {
-            len = redisFormatCommand(&cmd,"LPUSH mylist%s %s",tag,data);
-            benchmark("LPUSH",cmd,len);
-            free(cmd);
-        }
+//        if (test_is_selected("lpush")) {
+//            len = redisFormatCommand(&cmd,"LPUSH mylist%s %s",tag,data);
+//            benchmark("LPUSH",cmd,len);
+//            free(cmd);
+//        }
 
         if (test_is_selected("rpush")) {
             len = redisFormatCommand(&cmd,"RPUSH mylist%s %s",tag,data);
@@ -2045,9 +2045,9 @@ int main(int argc, char **argv) {
             } else if (config.ele_num == 32) {
                 len = redisFormatCommand(&cmd,"LPUSH mylist:__rand_int__ abcd:000 abcd:001 abcd:002 abcd:003 abcd:004 abcd:005 abcd:006 abcd:007 abcd:008 abcd:009 abcd:010 abcd:011 abcd:012 abcd:013 abcd:014 abcd:015 abcd:016 abcd:017 abcd:018 abcd:019 abcd:020 abcd:021 abcd:022 abcd:023 abcd:024 abcd:025 abcd:026 abcd:027 abcd:028 abcd:029 abcd:030 abcd:031",tag);
             } else {
-                len = redisFormatCommand(&cmd,"LPUSH mylist%s ele:__rand_int__",tag);
+                len = redisFormatCommand(&cmd,"LPUSH mylist%s %s",tag,data);
             }
-            benchmark("LPUSH ",cmd,len);
+            benchmark("LPUSH",cmd,len);
             free(cmd);
         }
 
