@@ -1943,7 +1943,7 @@ int main(int argc, char **argv) {
         }
 
         if (test_is_selected("hset")) {
-            // ./redis-benchmark -t hset -r 1000000000 -n 4000000
+            // ./redis-benchmark -t hset -r 1000000000 -n 4000000 --elenum 32 --elelen 8
             // n 代表key数目，下面的128-8代表每个key有128个entry，每个entry8字节长
             if (config.ele_num == 128 && config.ele_len == 8) {
                 len = redisFormatCommand(&cmd,
@@ -2020,6 +2020,12 @@ int main(int argc, char **argv) {
 
         if (test_is_selected("zpopmin")) {
             len = redisFormatCommand(&cmd,"ZPOPMIN myzset%s",tag);
+            benchmark("ZPOPMIN",cmd,len);
+            free(cmd);
+        }
+
+        if (test_is_selected("zrandmember")) {
+            len = redisFormatCommand(&cmd,"ZRANDMEMBER myzset%s",tag);
             benchmark("ZPOPMIN",cmd,len);
             free(cmd);
         }
