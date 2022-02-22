@@ -439,6 +439,30 @@ static void randomizeClientKey(client c) {
     }
 }
 
+int get_random_str(char* random_str, const int random_len)
+{
+    int i, random_num, seed_str_len;
+    struct timeval tv;
+    unsigned int seed_num;
+//    char seed_str[] = "abcdefghijklmnopqrstuvwxyz"
+//                      "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; //随机字符串的随机字符集
+    char seed_str[] = "abcdefghij"; //随机字符串的随机字符集
+
+    seed_str_len = strlen(seed_str);
+
+    gettimeofday(&tv, NULL);
+    seed_num = (unsigned int)(tv.tv_sec + tv.tv_usec); //超了unsigned int的范围也无所谓，我们要的只是不同的种子数字
+    srand(seed_num);
+
+    for(i = 0; i < random_len; i++)
+    {
+        random_num = rand()%seed_str_len;
+        random_str[i] = seed_str[random_num];
+    }
+
+    return 0;
+}
+
 static void setClusterKeyHashTag(client c) {
     assert(c->thread_id >= 0);
     clusterNode *node = c->cluster_node;
@@ -1709,7 +1733,6 @@ int main(int argc, char **argv) {
     int i;
     char *data, *cmd, *tag;
     int len;
-
     client c;
 
     srandom(time(NULL) ^ getpid());
@@ -1880,6 +1903,10 @@ int main(int argc, char **argv) {
 
     /* Run default benchmark suite. */
     data = zmalloc(config.datasize+1);
+    char *random_str;
+    if (config.ele_len > 0) {
+        random_str = (char *) zmalloc(config.ele_len);
+    }
     do {
         genBenchmarkRandomData(data, config.datasize);
         data[config.datasize] = '\0';
@@ -1894,7 +1921,12 @@ int main(int argc, char **argv) {
         }
 
         if (test_is_selected("set")) {
-            len = redisFormatCommand(&cmd,"SET key%s:__rand_int__ %s",tag,data);
+            if (config.ele_len > 0){
+                get_random_str(random_str, config.ele_len);
+                len = redisFormatCommand(&cmd,"SET key%s:__rand_int__ %s",tag,random_str);
+            } else {
+                len = redisFormatCommand(&cmd,"SET key%s:__rand_int__ %s",tag,data);
+            }
             benchmark("SET",cmd,len);
             free(cmd);
         }
@@ -2099,6 +2131,7 @@ int main(int argc, char **argv) {
     } while(config.loop);
 
     zfree(data);
+    zfree(random_str);
     freeCliConnInfo(config.conn_info);
     if (config.redis_config != NULL) freeRedisConfig(config.redis_config);
 
