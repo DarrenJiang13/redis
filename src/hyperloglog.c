@@ -1192,7 +1192,6 @@ void pfaddCommand(client *c) {
         updated++;
     } else {
         if (isHLLObjectOrReply(c,o) != C_OK) return;
-        o = dbUnshareStringValue(c->db,c->argv[1],o);
     }
     /* Perform the low level ADD operation for every element. */
     for (j = 2; j < c->argc; j++) {
@@ -1273,7 +1272,6 @@ void pfcountCommand(client *c) {
         addReply(c,shared.czero);
     } else {
         if (isHLLObjectOrReply(c,o) != C_OK) return;
-        o = dbUnshareStringValue(c->db,c->argv[1],o);
 
         /* Check if the cached cardinality is valid. */
         hdr = o->ptr;
@@ -1343,7 +1341,7 @@ void pfmergeCommand(client *c) {
         }
     }
 
-    /* Create / unshare the destination key's value if needed. */
+    /* Create the destination key's value if needed. */
     robj *o = lookupKeyWrite(c->db,c->argv[1]);
     if (o == NULL) {
         /* Create the key with a string value of the exact length to
@@ -1351,11 +1349,6 @@ void pfmergeCommand(client *c) {
          * is guaranteed to return bytes initialized to zero. */
         o = createHLLObject();
         dbAdd(c->db,c->argv[1],o);
-    } else {
-        /* If key exists we are sure it's of the right type/size
-         * since we checked when merging the different HLLs, so we
-         * don't check again. */
-        o = dbUnshareStringValue(c->db,c->argv[1],o);
     }
 
     /* Convert the destination object to dense representation if at least
@@ -1509,7 +1502,6 @@ void pfdebugCommand(client *c) {
         return;
     }
     if (isHLLObjectOrReply(c,o) != C_OK) return;
-    o = dbUnshareStringValue(c->db,c->argv[2],o);
     hdr = o->ptr;
 
     /* PFDEBUG GETREG <key> */
