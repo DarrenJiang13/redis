@@ -126,6 +126,9 @@ static struct config {
     pthread_mutex_t liveclients_mutex;
     pthread_mutex_t is_updating_slots_mutex;
     int resp3; /* use RESP3 */
+    int key_num;
+    int ele_num;
+    int ele_len;
 } config;
 
 typedef struct _client {
@@ -1421,7 +1424,13 @@ int parseOptions(int argc, char **argv) {
 
         if (!strcmp(argv[i],"-c")) {
             if (lastarg) goto invalid;
-            config.numclients = atoi(argv[++i]);
+            config.numclients = atoi(argv[++i]);}
+        else if (!strcmp(argv[i],"--keynum")) {
+            config.key_num = atoi(argv[++i]);
+        } else if (!strcmp(argv[i],"--elenum")) {
+            config.ele_num = atoi(argv[++i]);
+        } else if (!strcmp(argv[i],"--elelen")) {
+            config.ele_len = atoi(argv[++i]);
         } else if (!strcmp(argv[i],"-v") || !strcmp(argv[i], "--version")) {
             sds version = benchmarkVersion();
             printf("redis-benchmark %s\n", version);
@@ -1764,6 +1773,9 @@ int main(int argc, char **argv) {
     config.is_updating_slots = 0;
     config.slots_last_update = 0;
     config.enable_tracking = 0;
+    config.key_num = 0;
+    config.ele_num = 0;
+    config.ele_len = 0;
     config.resp3 = 0;
 
     i = parseOptions(argc,argv);
@@ -1924,56 +1936,123 @@ int main(int argc, char **argv) {
         }
 
         if (test_is_selected("lpush")) {
-            len = redisFormatCommand(&cmd,"LPUSH mylist%s %s",tag,data);
-            benchmark("LPUSH",cmd,len);
-            free(cmd);
+            if (config.key_num != 0) {
+                for(int i = 0; i <config.key_num; i++){
+                    len = redisFormatCommand(&cmd,"LPUSH mylist%d %s",i,data);
+                    benchmark("LPUSH",cmd,len);
+                    free(cmd);
+                }
+            } else {
+                len = redisFormatCommand(&cmd,"LPUSH mylist%s %s",tag,data);
+                benchmark("LPUSH",cmd,len);
+                free(cmd);
+            }
         }
 
         if (test_is_selected("rpush")) {
-            len = redisFormatCommand(&cmd,"RPUSH mylist%s %s",tag,data);
-            benchmark("RPUSH",cmd,len);
-            free(cmd);
+            if (config.key_num != 0) {
+                for(int i = 0; i <config.key_num; i++){
+                    len = redisFormatCommand(&cmd,"RPUSH mylist%d %s",i,data);
+                    benchmark("RPUSH",cmd,len);
+                    free(cmd);
+                }
+            } else {
+                len = redisFormatCommand(&cmd,"RPUSH mylist%s %s",tag,data);
+                benchmark("RPUSH",cmd,len);
+                free(cmd);
+            }
         }
 
         if (test_is_selected("lpop")) {
-            len = redisFormatCommand(&cmd,"LPOP mylist%s",tag);
-            benchmark("LPOP",cmd,len);
-            free(cmd);
+            if (config.key_num != 0) {
+                for(int i = 0; i <config.key_num; i++){
+                    len = redisFormatCommand(&cmd,"LPOP mylist%d",i);
+                    benchmark("LPOP",cmd,len);
+                    free(cmd);
+                }
+            } else {
+                len = redisFormatCommand(&cmd,"LPOP mylist%s",tag);
+                benchmark("LPOP",cmd,len);
+                free(cmd);
+            }
         }
 
         if (test_is_selected("rpop")) {
-            len = redisFormatCommand(&cmd,"RPOP mylist%s",tag);
-            benchmark("RPOP",cmd,len);
-            free(cmd);
+            if (config.key_num != 0) {
+                for(int i = 0; i <config.key_num; i++){
+                    len = redisFormatCommand(&cmd,"RPOP mylist%d",i);
+                    benchmark("RPOP",cmd,len);
+                    free(cmd);
+                }
+            } else {
+                len = redisFormatCommand(&cmd,"RPOP mylist%s",tag);
+                benchmark("RPOP",cmd,len);
+                free(cmd);
+            }
         }
 
         if (test_is_selected("sadd")) {
-            len = redisFormatCommand(&cmd,
-                "SADD myset%s element:__rand_int__",tag);
-            benchmark("SADD",cmd,len);
-            free(cmd);
+            if (config.key_num != 0) {
+                for(int i = 0; i <config.key_num; i++){
+                    len = redisFormatCommand(&cmd,
+                                             "SADD myset%d %s",data);
+                    benchmark("SADD",cmd,len);
+                    free(cmd);
+                }
+            } else {
+                len = redisFormatCommand(&cmd,
+                                         "SADD myset%s %s",data);
+                benchmark("SADD",cmd,len);
+                free(cmd);
+            }
         }
 
         if (test_is_selected("hset")) {
-            len = redisFormatCommand(&cmd,
-                "HSET myhash%s element:__rand_int__ %s",tag,data);
-            benchmark("HSET",cmd,len);
-            free(cmd);
+            if (config.key_num != 0) {
+                for(int i = 0; i <config.key_num; i++){
+                    len = redisFormatCommand(&cmd,
+                                             "HSET myhash%d ele:__rand_int__ %s",i,data); // 16bytes
+                    benchmark("HSET",cmd,len);
+                    free(cmd);
+                }
+            } else {
+                len = redisFormatCommand(&cmd,
+                                         "HSET myhash%s element:__rand_int__ %s",tag,data);
+                benchmark("HSET",cmd,len);
+                free(cmd);
+            }
         }
 
         if (test_is_selected("spop")) {
-            len = redisFormatCommand(&cmd,"SPOP myset%s",tag);
-            benchmark("SPOP",cmd,len);
-            free(cmd);
+            if (config.key_num != 0) {
+                for(int i = 0; i <config.key_num; i++){
+                    len = redisFormatCommand(&cmd,"SPOP myset%d",i);
+                    benchmark("SPOP",cmd,len);
+                    free(cmd);
+                }
+            } else {
+                len = redisFormatCommand(&cmd,"SPOP myset%s",tag);
+                benchmark("SPOP",cmd,len);
+                free(cmd);
+            }
         }
 
         if (test_is_selected("zadd")) {
-            char *score = "0";
-            if (config.randomkeys) score = "__rand_int__";
-            len = redisFormatCommand(&cmd,
-                "ZADD myzset%s %s element:__rand_int__",tag,score);
-            benchmark("ZADD",cmd,len);
-            free(cmd);
+            if (config.key_num != 0) {
+                char *score = "0";
+                if (config.randomkeys) score = "__rand_int__";
+                len = redisFormatCommand(&cmd,
+                                         "ZADD myzset%d %s %s",i,score,data);
+                benchmark("ZADD",cmd,len);
+                free(cmd);
+            } else {
+                char *score = "0";
+                if (config.randomkeys) score = "__rand_int__";
+                len = redisFormatCommand(&cmd,
+                                         "ZADD myzset%s %s %s",tag,score,data);
+                benchmark("ZADD",cmd,len);
+                free(cmd);
+            }
         }
 
         if (test_is_selected("zpopmin")) {
