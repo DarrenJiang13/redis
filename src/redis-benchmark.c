@@ -1949,7 +1949,7 @@ int main(int argc, char **argv) {
 
         if (test_is_selected("sadd")) {
             len = redisFormatCommand(&cmd,
-                "SADD myset%s %s",tag, data);
+                "SADD myset%s %s:__rand_int__",tag, data+13);
             benchmark("SADD",cmd,len);
             free(cmd);
         }
@@ -1971,7 +1971,7 @@ int main(int argc, char **argv) {
             char *score = "0";
             if (config.randomkeys) score = "__rand_int__";
             len = redisFormatCommand(&cmd,
-                "ZADD myzset%s %s %s",tag,score,data);
+                "ZADD myzset%s %s %s:__rand_int__",tag,score,data+13);
             benchmark("ZADD",cmd,len);
             free(cmd);
         }
