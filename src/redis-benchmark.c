@@ -1982,6 +1982,12 @@ int main(int argc, char **argv) {
             free(cmd);
         }
 
+        if (test_is_selected("xadd")) {
+            len = redisFormatCommand(&cmd,"xadd mystream%s * %s %s", tag, data, data);
+            benchmark("XADD",cmd,len);
+            free(cmd);
+        }
+
         if (test_is_selected("lrange") ||
             test_is_selected("lrange_100") ||
             test_is_selected("lrange_300") ||
