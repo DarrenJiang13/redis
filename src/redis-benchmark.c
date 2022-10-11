@@ -114,6 +114,7 @@ static struct config {
     int num_threads;
     struct benchmarkThread **threads;
     int cluster_mode;
+    int rand_letter_num;
     int cluster_node_count;
     struct clusterNode **cluster_nodes;
     struct redisConfig *redis_config;
@@ -429,6 +430,29 @@ static void randomizeClientKey(client c) {
             p--;
         }
     }
+}
+
+int get_random_str(char* random_str, const int random_len)
+{
+    int i, random_num, seed_str_len;
+    struct timeval tv;
+    unsigned int seed_num;
+    char seed_dataset[] ="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    char seed_str[config.rand_letter_num];
+    strncpy(seed_str,seed_dataset,config.rand_letter_num);
+
+    seed_str_len = config.rand_letter_num;
+    gettimeofday(&tv, NULL);
+    seed_num = (unsigned int)(tv.tv_sec + tv.tv_usec); //超了unsigned int的范围也无所谓，我们要的只是不同的种子数字
+    srand(seed_num);
+
+    for(i = 0; i < random_len; i++)
+    {
+        random_num = rand()%seed_str_len;
+        random_str[i] = seed_str[random_num];
+    }
+
+    return 0;
 }
 
 static void setClusterKeyHashTag(client c) {
@@ -1527,6 +1551,8 @@ int parseOptions(int argc, char **argv) {
              } else if (config.num_threads < 0) config.num_threads = 0;
         } else if (!strcmp(argv[i],"--cluster")) {
             config.cluster_mode = 1;
+        }else if (!strcmp(argv[i],"--rand-letter-num")) {
+            config.rand_letter_num = atoi(argv[++i]);
         } else if (!strcmp(argv[i],"--enable-tracking")) {
             config.enable_tracking = 1;
         } else if (!strcmp(argv[i],"--help")) {
@@ -1757,6 +1783,7 @@ int main(int argc, char **argv) {
     config.num_threads = 0;
     config.threads = NULL;
     config.cluster_mode = 0;
+    config.rand_letter_num = 0;
     config.cluster_node_count = 0;
     config.cluster_nodes = NULL;
     config.redis_config = NULL;
@@ -1892,6 +1919,7 @@ int main(int argc, char **argv) {
 
     /* Run default benchmark suite. */
     data = zmalloc(config.datasize+1);
+    char *random_str = (char *) zmalloc(config.datasize+1);
     do {
         genBenchmarkRandomData(data, config.datasize);
         data[config.datasize] = '\0';
@@ -1906,8 +1934,15 @@ int main(int argc, char **argv) {
         }
 
         if (test_is_selected("set")) {
-            len = redisFormatCommand(&cmd,"SET key%s:__rand_int__ %s",tag,data);
-            benchmark("SET",cmd,len);
+            if (config.rand_letter_num > 0) {
+                get_random_str(random_str, config.datasize);
+                random_str[config.datasize] = '\0';
+                len = redisFormatCommand(&cmd, "SET key%s:__rand_int__ %s", tag, random_str);
+
+            } else {
+                len = redisFormatCommand(&cmd, "SET key%s:__rand_int__ %s", tag, data);
+            }
+            benchmark("SET", cmd, len);
             free(cmd);
         }
 
