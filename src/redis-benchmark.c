@@ -1938,7 +1938,6 @@ int main(int argc, char **argv) {
                 get_random_str(random_str, config.datasize);
                 random_str[config.datasize] = '\0';
                 len = redisFormatCommand(&cmd, "SET key%s:__rand_int__ %s", tag, random_str);
-
             } else {
                 len = redisFormatCommand(&cmd, "SET key%s:__rand_int__ %s", tag, data);
             }
@@ -1990,8 +1989,13 @@ int main(int argc, char **argv) {
         }
 
         if (test_is_selected("hset")) {
-            len = redisFormatCommand(&cmd,
-                "HSET myhash%s element:__rand_int__ %s",tag,data);
+            if (config.rand_letter_num > 0) {
+                get_random_str(random_str, config.datasize);
+                random_str[config.datasize] = '\0';
+                len = redisFormatCommand(&cmd,"HSET myhash%s element:__rand_int__ %s",tag,random_str);
+            } else {
+                len = redisFormatCommand(&cmd,"HSET myhash%s element:__rand_int__ %s",tag,data);
+            }
             benchmark("HSET",cmd,len);
             free(cmd);
         }
